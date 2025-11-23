@@ -57,6 +57,53 @@ The application follows a distributed order processing workflow:
 4. **`simulation_analysis.ipynb`**: Jupyter notebook for analyzing simulation results.
 
 
+# How to Compile
+
+Before running the application, you need to compile the project and fetch its dependencies. You can do this using either `make` or `mix` directly.
+
+## Using Make
+
+The easiest way to compile the project is using the provided Makefile:
+
+```bash
+make compile
+```
+
+This command will:
+1. Fetch all dependencies (`mix deps.get`)
+2. Compile dependencies (`mix deps.compile`)
+3. Compile the project (`mix compile`)
+
+Alternatively, you can fetch dependencies separately:
+
+```bash
+make deps
+```
+
+## Using Mix Directly
+
+You can also compile the project using Mix commands directly:
+
+1. **Fetch dependencies**:
+   ```bash
+   mix deps.get
+   ```
+
+2. **Compile dependencies**:
+   ```bash
+   mix deps.compile
+   ```
+
+3. **Compile the project**:
+   ```bash
+   mix compile
+   ```
+
+Or combine all steps in one command:
+```bash
+mix deps.get && mix deps.compile && mix compile
+```
+
 # How to run : 
 
 To run the program and observe its different features you can run the following commands : 
