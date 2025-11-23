@@ -41,19 +41,26 @@ defmodule ImtOrder.API do
     require Logger
     {:ok,bin,conn} = read_body(conn)
     order = Poison.decode!(bin)
-    selected_node = getNode(order["id"])
-    case  :rpc.call(selected_node , TransactorInterface, :start, [order["id"]]) do
-    {:ok, _pid}  ->
-          case :rpc.call(selected_node , TransactorInterface, :new_order , [order]) do
-            {:ok , _}->
-              conn |> send_resp(200,"") |> halt()
-          err ->
-            Logger.error("[New Order] Error #{inspect err}")
+
+    case order["id"] do
+      nil ->
+        Logger.error("[New Order] Missing order ID")
+        conn |> send_resp(400, "Missing order ID") |> halt()
+      order_id ->
+        selected_node = getNode(order_id)
+        case  :rpc.call(selected_node , TransactorInterface, :start, [order_id], 5000) do
+          {:ok, _pid}  ->
+            case :rpc.call(selected_node , TransactorInterface, :new_order , [order], 5000) do
+              {:ok , _}->
+                conn |> send_resp(200,"") |> halt()
+            err ->
+              Logger.error("[New Order] Error #{inspect err}")
+              conn |> send_resp(500,"") |> halt()
+            end
+        err ->
+            Logger.error("[Create] Error #{inspect err}")
             conn |> send_resp(500,"") |> halt()
-          end
-    err ->
-          Logger.error("[Create] Error #{inspect err}")
-          conn |> send_resp(500,"") |> halt()
+        end
     end
   end
 
@@ -67,9 +74,9 @@ post "/order/:orderid/payment-callback" do
 
   selected_node = getNode(orderid)
 
-  case :rpc.call(selected_node , TransactorInterface, :start, [orderid]) do
+  case :rpc.call(selected_node , TransactorInterface, :start, [orderid], 5000) do
     {:ok, _pid} ->
-            case :rpc.call(selected_node , TransactorInterface, :checkout, [transaction_id,orderid]) do
+            case :rpc.call(selected_node , TransactorInterface, :checkout, [orderid, transaction_id], 5000) do
               {:ok , _ }->
                   conn |> send_resp(200,"") |> halt()
               err ->

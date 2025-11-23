@@ -32,12 +32,21 @@ defmodule TransactorServer do
   def handle_call({:new, order}, _from, %{id: orderId, order: nil}) do
     case order["id"] do
       ^orderId ->  # Pattern match for valid order ID
-        {:ok, updated_order} = create(order)
-        result = retry_request('http://localhost:9091/order/new' , 3 , 1000 , updated_order )
-        {:reply, {:ok ,result} , %{id: orderId, order: updated_order}}
+        case create(order) do
+          {:ok, updated_order} ->
+            result = retry_request('http://localhost:9091/order/new' , 3 , 1000 , updated_order )
+            {:reply, {:ok ,result} , %{id: orderId, order: updated_order}}
+          {:error, reason} ->
+            {:reply, {:error, reason}, %{id: orderId, order: nil}}
+        end
       _ ->  # If order ID is mismatched, send an error message
         {:reply, {:error, "unregistered order"}, %{id: orderId, order: nil}}
     end
+  end
+
+  # Handles a :new call when an order already exists
+  def handle_call({:new, order}, _from, %{id: orderId, order: existing_order}) do
+    {:reply, {:error, "Order already exists"}, %{id: orderId, order: existing_order}}
   end
 
   # Handles a :payment call to process payment with a given transaction ID
@@ -45,8 +54,12 @@ defmodule TransactorServer do
   # @param _from - Caller info (unused)
   # @param state - Current state, expected to contain the orderId and order details
   # @return Reply with updated state if payment is successful; stops GenServer otherwise
+  def handle_call({:payment, %{"transaction_id" => transaction_id}}, _from, %{id: orderId, order: nil}) do
+    {:reply, {:error, "Order not found"}, %{id: orderId, order: nil}}
+  end
+
   def handle_call({:payment, %{"transaction_id" => transaction_id}}, _from, %{id: orderId, order: order}) do
-    case checkout(order, transaction_id) do
+    case checkout(orderId, transaction_id) do
       {:ok, updated_order} ->  # Payment successful, update the state with new order data
       result = retry_request('http://localhost:9091/order/process_delivery' , 3 , 1000 , updated_order)
         {:reply, {:ok ,result}, %{id: orderId, order: updated_order}}

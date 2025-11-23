@@ -104,7 +104,7 @@ defmodule Req do
         end
       end)
 
-    IO.write(logfile, "#{900000000 + order_id},#{ts},/order/#{order_id}/payment-callback',#{div(time, 1000)},#{ok?},#{other}\n")
+    IO.write(logfile, "#{900000000 + order_id},#{ts},/order/#{order_id}/payment-callback,#{div(time, 1000)},#{ok?},#{other}\n")
   end
 end
 

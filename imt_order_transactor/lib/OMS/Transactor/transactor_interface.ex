@@ -37,7 +37,7 @@ defmodule TransactorInterface do
 
   Returns the result of the GenServer call.
   """
-  def checkout(transaction_id, order_id) do
+  def checkout(order_id, transaction_id) do
     GenServer.call({ :global, :"#{order_id}-Transactor"}, {:payment, %{"transaction_id" => transaction_id}})
   end
 end

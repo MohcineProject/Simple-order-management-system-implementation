@@ -31,15 +31,20 @@ defmodule TransactorAbstraction do
         end
       end)
     end)
-    updated_order = Map.put(order,"store_id",selected_store)
-    MicroDb.HashTable.put("orders",order["id"],updated_order)
-    {:ok ,updated_order}
+
+    case selected_store do
+      nil -> {:error, "No store found with all products in stock"}
+      _ ->
+        updated_order = Map.put(order,"store_id",selected_store)
+        MicroDb.HashTable.put("orders",order["id"],updated_order)
+        {:ok ,updated_order}
+    end
   end
 
   @doc """
   Processes a payment for an order.
 
-  It takes an order as a map with an "id" key.
+  It takes an order_id (string or integer) as the first parameter.
 
   It also takes a transaction_id as a string.
 
@@ -47,16 +52,17 @@ defmodule TransactorAbstraction do
 
   It then returns the updated order.
   """
-  def checkout( order, transaction_id) do
-    case MicroDb.HashTable.get("orders",order["id"]) do
+  def checkout(order_id, transaction_id) do
+    case MicroDb.HashTable.get("orders", order_id) do
       nil-> {:error , "Unknown order" }
       order->
-        if Map.has_key?(order , "store_id") do
+        if not Map.has_key?(order , "store_id") do
           {:error , "Order not created"}
+        else
+          updated_order = Map.put(order,"transaction_id",transaction_id)
+          MicroDb.HashTable.put("orders",order["id"],updated_order)
+          {:ok , updated_order}
         end
-        updated_order = Map.put(order,"transaction_id",transaction_id)
-        MicroDb.HashTable.put("orders",order["id"],order)
-        {:ok , updated_order}
     end
   end
 

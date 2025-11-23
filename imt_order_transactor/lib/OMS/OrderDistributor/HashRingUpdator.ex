@@ -54,8 +54,13 @@ defmodule HashRingUpdator do
 
   # Adds a node to the hash ring.
   defp add_node(ring, node) do
-    new_ring = [{rem(:erlang.phash2(node), 360), node} | ring]
-    Enum.sort_by(new_ring, &elem(&1, 0))
+    # Check if node already exists in the ring to avoid duplicates
+    if Enum.any?(ring, fn {_, n} -> n == node end) do
+      ring
+    else
+      new_ring = [{rem(:erlang.phash2(node), 360), node} | ring]
+      Enum.sort_by(new_ring, &elem(&1, 0))
+    end
   end
 
   # Removes a node from the hash ring
